@@ -1,11 +1,14 @@
+import os
 from fastapi import FastAPI
-from pydantic import BaseModel
 import joblib
-import numpy as np
+from pydantic import BaseModel
 
-model=joblib.load("xgb_housing_price_model.pkl")
+# Load model
+model = joblib.load("xgb_model.pkl")
 
-class HouseData(BaseModel):
+app = FastAPI()
+
+class HouseFeatures(BaseModel):
     MedInc: float
     HouseAge: float
     AveRooms: float
@@ -14,14 +17,17 @@ class HouseData(BaseModel):
     AveOccup: float
     Latitude: float
     Longitude: float
-    
-app=FastAPI()
+
 @app.get("/")
 def read_root():
-    return{"Message":"California Housing price Prediction API"}    
+    return {"message": "Welcome to House Price Prediction API"}
+
 @app.post("/predict")
-def predict_price(data: HouseData):
-    input_data = np.array([[data.MedInc, data.HouseAge, data.AveRooms, data.AveBedrms,
-                            data.Population, data.AveOccup, data.Latitude, data.Longitude]])
-    prediction = model.predict(input_data)[0]
-    return {"predicted_price": float(prediction)}
+def predict_price(features: HouseFeatures):
+    data = [[
+        features.MedInc, features.HouseAge, features.AveRooms,
+        features.AveBedrms, features.Population,
+        features.AveOccup, features.Latitude, features.Longitude
+    ]]
+    prediction = model.predict(data)
+    return {"predicted_price": float(prediction[0])}
